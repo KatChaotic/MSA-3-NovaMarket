@@ -1,0 +1,53 @@
+@startuml
+title Успешная цепочка
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Sequence.puml
+
+Person(user, "Пользователь")
+
+Container(cart_service, "Сервис корзины")
+Container(good_service, "Сервис товаров")
+Container(order_service, "Сервис заказа")
+Container(payment_service, "Сервис оплаты")
+Container(delivery_service, "Сервис доставки")
+Container(notification_service, "Сервис уведомлений")
+
+Rel(user, cart_service, "Добавляет товар", "ItemAddedToCart")
+activate cart_service
+Rel(user, cart_service, "Подтверждает заказ", "OrderCreated")
+
+Rel(cart_service, order_service, "Создание заказа", "OrderCreated")
+activate order_service
+Rel(cart_service, good_service, "Резерв товаров", "OrderCreated")
+activate good_service
+Rel(cart_service, payment_service, "Создание оплаты", "OrderCreated")
+deactivate cart_service
+
+activate payment_service
+Rel(payment_service, payment_service, "Проведение оплаты")
+Rel(payment_service, order_service, "Подтверждение оплаты", "PaymentCompleted", $rel=-->)
+deactivate payment_service
+
+Rel(order_service, good_service, "Списание товара", "OrderConfirmed", $rel=-->)
+deactivate good_service
+
+Rel(order_service, delivery_service, "Создание доставки", "OrderConfirmed")
+activate delivery_service
+Rel(delivery_service, order_service, "Передача в службу доставки", "DeliveryTransferred", $rel=-->)
+
+Rel(order_service, notification_service, "Статус изменен", "OrderStatusChanged")
+activate notification_service
+Rel(notification_service, user, "Уведомление", $rel=-->)
+deactivate notification_service
+
+Rel(delivery_service, order_service, "Доставка завершена", "DeliveryCompleted", $rel=-->)
+deactivate delivery_service
+
+Rel(order_service, notification_service, "Заказ завершен", "OrderCompleted")
+deactivate order_service
+
+activate notification_service
+Rel(notification_service, user, "Уведомление", $rel=-->)
+deactivate notification_service
+
+@enduml
