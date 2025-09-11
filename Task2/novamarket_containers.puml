@@ -1,0 +1,112 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Person(user, "Пользователь")
+
+Component_Ext(payment_gateway, "Платежный шлюз")
+Component_Ext(delivery_3rd_party, "Служба доставки")
+
+Component_Ext(sms_gateway, "Шлюз СМС")
+Component_Ext(push_gateway, "Шлюз push-уведомлений")
+Component_Ext(email_server, "SMTP Сервер")
+
+System_Boundary(novamarket, "NovaMarket") {
+    Container(frontend, "Frontend")
+
+    Container(api_gateway, "API Gateway", "GraphQL Gateway", "Авторизует запросы, объединяет остальные микросервисы в единую GraphQL схему")
+    
+    Container_Boundary(order_service, "Сервис заказов") {
+        Component(order_service_api, "Orders API", "GraphQL", "Предоставляет полную информацию о заказе")
+
+        Component(order_service_orchestrator, "Orders Service", "", "Оркестрации заказа")
+
+        ComponentDb(orders_db, "Orders DB")
+    }
+
+    Container_Boundary(goods_service, "Сервис товаров") {
+        Component(goods_service_api, "Goods API", "GraphQL", "Предоставляет полную информацию о товаре и возможность его редактировать")
+
+        Component(goods_service_snapshotter, "Goods Snapshotting Service", "", "Записывает события в БД и делает слепки товаров")
+
+        ComponentDb(goods_snapshots_db, "Goods Snapshots DB")
+        ComponentDb(goods_events_db, "Goods Events DB")
+    }
+
+    Container_Boundary(delivery_service, "Сервис доставки") {
+        Component(delivery_service_api, "Deliveries API", "Rest", "Предоставляет информацию о доставке")
+
+        Component(delivery_service_orchestrator, "Deliveries Service", "", "Оркестрации доставки")
+
+        ComponentDb(deliveries_db, "Deliveries DB")
+    }
+
+    Container_Boundary(payment_service, "Сервис оплаты") {
+        Component(payment_service_api, "Payments API", "Rest", "Информация об оплатах, чеки")
+
+        Component(payment_service_orchestrator, "Payments Service", "", "Оркестрация оплаты")
+
+        ComponentDb(payments_db, "Payments DB")
+    }
+
+    Container_Boundary(review_service, "Сервис отзывов") {
+        Component(review_service_api, "Reviews API", "Rest", "Информация об отзывах на товары")
+        ComponentDb(reviews_db, "Reviews DB")
+    }
+
+    Container(notification_service, "Сервис уведомлений")
+
+    ContainerQueue(event_bus, "Шина событий", "kafka")
+}
+
+Rel(user, frontend, "Использует")
+
+Rel(frontend, api_gateway, "Использует")
+
+' Orders
+Rel(api_gateway, order_service_api, "Использует")
+
+Rel(order_service_api, orders_db, "Использует")
+Rel(order_service_orchestrator, orders_db, "Использует")
+
+Rel(order_service_api, event_bus, "Публикует", "События заказов")
+BiRel(event_bus, order_service_orchestrator, "Использует")
+
+' Goods
+Rel(api_gateway, goods_service_api, "Использует", "GraphQL")
+Rel(goods_service_api, goods_snapshots_db, "Читает")
+Rel(goods_service_api, goods_events_db, "Использует")
+Rel(goods_service_snapshotter, goods_snapshots_db, "Записывает")
+Rel(goods_service_snapshotter, goods_events_db, "Использует")
+
+Rel(goods_service_api, event_bus, "Публикует", "События товаров")
+Rel(event_bus, goods_service_snapshotter, "Предоставляет", "События товаров")
+
+' Deliveries
+Rel(api_gateway, delivery_service_api, "Использует")
+Rel(delivery_service_api, deliveries_db, "Использует")
+BiRel(event_bus, delivery_service_orchestrator, "Использует")
+Rel(delivery_service_orchestrator, deliveries_db, "Использует")
+Rel(delivery_3rd_party, delivery_service_api, "Использует", "Rest", "Webhook API Call")
+Rel(delivery_service_api, event_bus, "Публикует", "События доставки")
+
+' Payments
+Rel(api_gateway, payment_service_api, "Использует")
+Rel(payment_gateway, payment_service_api, "Использует", "Rest", "Webhook API Call")
+Rel(payment_service_api, payments_db, "Использует")
+Rel(payment_service_api, event_bus, "Публикует", "События оплаты")
+Rel(payment_service_orchestrator, payments_db, "Использует")
+BiRel(event_bus, payment_service_orchestrator, "Использует")
+
+' Reviews
+Rel(api_gateway, review_service_api, "Использует")
+Rel(review_service_api, event_bus, "Публикует", "События отзывов")
+Rel(review_service_api, reviews_db, "Использует")
+
+' Notifications
+Rel(event_bus, notification_service, "Предоставляет")
+Rel(notification_service, push_gateway, "Использует")
+Rel(notification_service, sms_gateway, "Использует")
+Rel(notification_service, email_server, "Использует")
+
+@enduml
