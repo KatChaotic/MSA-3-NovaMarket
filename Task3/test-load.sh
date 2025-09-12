@@ -1,0 +1,1 @@
+docker run -p 8089:8089 --rm -v ./:/mnt/locust locustio/locust -f /mnt/locust/locust.py
