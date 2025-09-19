@@ -10,9 +10,16 @@ spec:
   minReplicas: {{ .Values.hpa.minReplicas }}
   maxReplicas: {{ .Values.hpa.maxReplicas }}
   metrics:
-  - type: Resource
-    resource:
-      name: memory
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
       target:
-        type: Utilization
-        averageUtilization: {{ .Values.hpa.memoryUtilization }}
+        type: AverageValue
+        averageValue: 10
+  # - type: Resource
+  #   resource:
+  #     name: memory
+  #     target:
+  #       type: Utilization
+  #       averageUtilization: {{ .Values.hpa.memoryUtilization }}

@@ -1,5 +1,5 @@
 prometheus:
-  url: "http://<адрес_prometheus>"
+  url: "http://prometheus.default.svc"
 rules:
   default: false
   custom:
@@ -9,7 +9,7 @@ rules:
           namespace: {resource: "namespace"}
           pod: {resource: "pod"}
       name:
-        matches: "^http_requests_total"
+        matches: "http_requests_total"
         as: "http_requests_per_second"
-      metricsQuery: 'sum(rate(http_requests_total{<<.LabelMatchers>>}[30s])) by (<<.GroupBy>>)'
+      metricsQuery: 'sum(rate(http_requests_total{<<.LabelMatchers>>}[1m])) by (<<.GroupBy>>)'
 
