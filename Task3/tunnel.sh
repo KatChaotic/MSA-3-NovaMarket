@@ -1,0 +1,1 @@
+kubectl port-forward service/scaletestapp --address 0.0.0.0 8080:8080

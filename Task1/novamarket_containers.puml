@@ -1,0 +1,101 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container(goods_service, "Сервис товаров", "", "Детальная информация о товаре, стоимости, доступном количестве")
+Container(cart_service, "Сервис корзины", "", "Хранение информации о добавленных товарах")
+Container(review_service, "Сервис отзывов", "", "Хранение отзывов о товарах")
+Container(payment_service, "Сервис оплаты", "", "Проведение платежей")
+Container(order_service, "Сервис заказа", "", "Хранение и отслеживание статуса заказа")
+Container(delivery_service, "Сервис доставки", "", "Формирование и отслеживание статуса доставки")
+Container(notification_service, "Сервис уведомлений", "", "Отправка уведомлений клиенту (email, push, sms)")
+
+' Товары
+ComponentQueue(GoodPriceChanged, "Топик GoodPriceChanged", "kafka")
+ComponentQueue(GoodQuantityChanged, "Топик GoodQuantityChanged", "kafka")
+
+Rel(goods_service, GoodPriceChanged, "Публикует")
+Rel(goods_service, GoodQuantityChanged, "Публикует")
+Rel(GoodPriceChanged, cart_service, "Потребляет")
+Rel(GoodQuantityChanged, cart_service, "Потребляет")
+
+' Отзывы
+ComponentQueue(ReviewAdded, "Топик ReviewAdded", "kafka")
+
+Rel(review_service, ReviewAdded, "Публикует")
+
+Rel(ReviewAdded, cart_service, "Потребляет")
+
+' Корзина
+ComponentQueue(ItemAddedToCart, "Топик ItemAddedToCart", "kafka")
+ComponentQueue(ItemRemovedFromCart, "Топик ItemRemovedFromCart", "kafka")
+ComponentQueue(OrderCreated, "Топик OrderCreated", "kafka")
+ComponentQueue(CartItemOutOfStocked, "Топик CartItemOutOfStocked", "kafka")
+ComponentQueue(CartItemPriceChanged, "Топик CartItemPriceChanged", "kafka")
+ComponentQueue(CartItemReviewAdded, "Топик CartItemReviewAdded", "kafka")
+
+Rel(cart_service, ItemAddedToCart, "Публикует")
+Rel(cart_service, ItemRemovedFromCart, "Публикует")
+Rel(cart_service, OrderCreated, "Публикует")
+Rel(cart_service, CartItemOutOfStocked, "Публикует")
+Rel(cart_service, CartItemPriceChanged, "Публикует")
+Rel(cart_service, CartItemReviewAdded, "Публикует")
+
+Rel(OrderCreated, payment_service, "Потребляет")
+Rel(OrderCreated, order_service, "Потребляет")
+Rel(OrderCreated, goods_service, "Потребляет")
+
+Rel(CartItemOutOfStocked, notification_service, "Потребляет")
+Rel(CartItemPriceChanged, notification_service, "Потребляет")
+Rel(CartItemReviewAdded, notification_service, "Потребляет")
+
+'Оплата
+ComponentQueue(PaymentCompleted, "Топик PaymentCompleted", "kafka")
+ComponentQueue(PaymentRejected, "Топик PaymentRejected", "kafka")
+ComponentQueue(PaymentTimeout, "Топик PaymentTimeout", "kafka")
+ComponentQueue(PaymentRefunded, "Топик PaymentRefunded", "kafka")
+
+Rel(payment_service, PaymentCompleted, "Публикует")
+Rel(payment_service, PaymentRejected, "Публикует")
+Rel(payment_service, PaymentTimeout, "Публикует")
+Rel(payment_service, PaymentRefunded, "Публикует")
+
+Rel(PaymentCompleted, order_service, "Потребляет")
+Rel(PaymentRejected, order_service, "Потребляет")
+
+'Заказ
+ComponentQueue(OrderConfirmed, "Топик OrderConfirmed", "kafka")
+ComponentQueue(OrderCanceled, "Топик OrderCanceled", "kafka")
+ComponentQueue(OrderCompleted, "Топик OrderCompleted", "kafka")
+ComponentQueue(OrderStatusChanged, "Топик OrderStatusChanged", "kafka")
+
+Rel(order_service, OrderConfirmed, "Публикует")
+Rel(order_service, OrderCanceled, "Публикует")
+Rel(order_service, OrderCompleted, "Публикует")
+Rel(order_service, OrderStatusChanged, "Публикует")
+
+Rel(OrderCanceled, goods_service, "Потребляет")
+Rel(OrderConfirmed, goods_service, "Потребляет")
+
+Rel(OrderConfirmed, delivery_service, "Потребляет")
+Rel(OrderStatusChanged, notification_service, "Потребляет")
+
+'Доставка
+ComponentQueue(DeliveryCreated, "Топик DeliveryCreated", "kafka")
+ComponentQueue(DeliveryTransferred, "Топик DeliveryTransferred", "kafka")
+ComponentQueue(DeliveryDelivered, "Топик DeliveryDelivered", "kafka")
+ComponentQueue(DeliveryCanceled, "Топик DeliveryCanceled", "kafka")
+
+Rel(delivery_service, DeliveryCreated, "Публикует")
+Rel(delivery_service, DeliveryTransferred, "Публикует")
+Rel(delivery_service, DeliveryDelivered, "Публикует")
+Rel(delivery_service, DeliveryCanceled, "Публикует")
+
+Rel(DeliveryCreated, order_service, "Потребляет")
+Rel(DeliveryTransferred, order_service, "Потребляет")
+Rel(DeliveryDelivered, order_service, "Потребляет")
+Rel(DeliveryCanceled, order_service, "Потребляет")
+
+Rel(DeliveryCreated, notification_service, "Потребляет")
+
+@enduml

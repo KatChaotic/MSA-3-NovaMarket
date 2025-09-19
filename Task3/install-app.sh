@@ -1,0 +1,1 @@
+helm upgrade scaletestapp ./helm/scaletestapp || helm install scaletestapp ./helm/scaletestapp

@@ -1,0 +1,16 @@
+image:
+  name: ghcr.io/yandex-practicum/scaletestapp
+  tag: latest
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+resource:
+  memory: "30Mi"
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 10
+  memoryUtilization: 80
